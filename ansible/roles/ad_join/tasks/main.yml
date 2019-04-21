@@ -1,0 +1,17 @@
+
+
+- name: install dependencies
+  apt:
+    name: "{{ packages }}"
+  vars:
+    packages:
+    - realmd
+    - sssd
+    - sssd-tools
+    - samba-common
+    - krb5-user
+    - packagekit
+    - samba-common-bin
+    - samba-libs 
+    - adcli
+
