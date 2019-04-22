@@ -14,4 +14,82 @@
     - samba-common-bin
     - samba-libs 
     - adcli
+    - chrony
+
+- template:
+    src: source/chrony.conf
+    dest: /etc/chrony/chrony.conf
+
+- template:
+    src: source/realmd.conf
+    dest: /etc/realmd.conf
+
+- name: restart and enable chronyd
+  service:
+    name: chronyd
+    state: restarted
+    enabled: yes
+
+- name: restart and enable realmd
+  service:
+    name: realmd
+    state: restarted
+    enabled: yes
+
+- name: make sure primary DC is up/dns is working
+  shell: 
+        #!/bin/bash
+
+        ping -q -c 1 -W 1 {{ primary_dc }}
+  changed_when: no
+
+- name: set fqdn of primary DC
+  set_fact:
+    fqdn_primary_dc: '{{ primary_dc }}.{{ domain }}' 
+
+- name: set kerberos realm name
+  set_fact:
+    kerberos_realm: '{{ domain|upper }}'
+
+- name: set kerberos primary DC
+  set_fact:
+    kerberos_fqdn_primary_dc: '{{ fqdn_primary_dc|upper }}'
+
+- template:
+    src: source/krb5.conf
+    dest: /etc/krb5.conf
+
+- name: get a kerberos ticket
+  shell:
+        #!/bin/bash
+
+        echo -n {{ domain_password }} | kinit {{ domain_user }}@{{ kerberos_realm }}
+  no_log: true
+
+- name: join the domain
+  shell:
+        #!/bin/bash
+
+        realm --verbose join {{ domain }} --user-principal={{ inventory_hostname_short|upper }}/{{ domain_user }}@{{ kerberos_realm }} --unattended
+  register: command_result
+  failed_when: 
+    - "'realm: Already joined to this domain' not in command_result.stderr"
+  changed_when:
+    - "'realm: Already joined to this domain' not in command_result.stderr"
+
+- template:
+    src: source/sssd.conf
+    dest: /etc/sssd/sssd.conf
+
+- name: restart and enable sssd
+  service:
+    name: sssd
+    state: restarted
+    enabled: yes
+
+- name: add pam rule for domain home director's, (/home/domain/username)
+  copy:
+    src: source/common-session
+    dest: /etc/pam.d/common-session
+
 
