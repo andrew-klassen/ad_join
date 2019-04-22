@@ -70,7 +70,7 @@
   shell:
         #!/bin/bash
 
-        realm --verbose join {{ domain }} --user-principal={{ inventory_hostname_short|upper }}/{{ domain_user }}@{{ kerberos_realm }} --unattended
+        realm --verbose join {{ domain }} --user-principal={{ client_hostname }}/{{ domain_user }}@{{ kerberos_realm }} --unattended
   register: command_result
   failed_when: 
     - "'realm: Already joined to this domain' not in command_result.stderr"
