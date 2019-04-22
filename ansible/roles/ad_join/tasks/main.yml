@@ -78,7 +78,7 @@
   register: command_result
   failed_when: 
     - "'realm: Already joined to this domain' not in command_result.stderr"
-    - "'Successfully enrolled machine in realm' not in command_result.stdout"
+    - "'Successfully enrolled machine in realm' not in command_result.stderr"
   changed_when:
     - "'realm: Already joined to this domain' not in command_result.stderr"
 
