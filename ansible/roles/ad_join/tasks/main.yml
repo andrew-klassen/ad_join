@@ -1,5 +1,4 @@
 
-
 - name: install dependencies
   apt:
     name: "{{ packages }}"
@@ -40,6 +39,7 @@
     enabled: yes
   when: realmd.changed
 
+# kerberos is extremely sensitive to dns and time synchronization
 - name: make sure primary DC is up/dns is working
   shell: 
         #!/bin/bash
@@ -63,6 +63,7 @@
     src: source/krb5.conf
     dest: /etc/krb5.conf
 
+# ticket is used to initially join the host to the domain, no_log prevents ansible from echoing out the password
 - name: get a kerberos ticket
   shell:
         #!/bin/bash
@@ -70,6 +71,7 @@
         echo -n {{ domain_password }} | kinit {{ domain_user }}@{{ kerberos_realm }}
   no_log: true
 
+# join domain, don't stop the playbook if already joined
 - name: join the domain
   shell:
         #!/bin/bash
@@ -82,7 +84,6 @@
   changed_when:
     - "'realm: Already joined to this domain' not in command_result.stderr"
 
-
 - template:
     src: source/sssd.conf
     dest: /etc/sssd/sssd.conf
@@ -93,9 +94,9 @@
     state: restarted
     enabled: yes
 
-- name: add pam rule for domain home director's, (/home/domain/username)
+# this creates the directory if it does not exist
+- name: add pam rule for domain user's home directories, (/home/domain/username)
   copy:
     src: source/common-session
     dest: /etc/pam.d/common-session
-
 
